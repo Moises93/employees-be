@@ -19,8 +19,11 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema.Builder;
 import com.google.gson.Gson;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 
 import employees.domain.DummyResponse;
+import employees.utils.SftpUtils;
 
 @Service
 public class DummyServiceImpl implements DummyService{
@@ -44,6 +47,7 @@ public class DummyServiceImpl implements DummyService{
 		    try {
 		      entityResponse = restTemplate.getForEntity(endpoint, DummyResponse.class);
 		      createCsv(entityResponse.getBody());
+		      putFileToSftp();
 		      return entityResponse.getBody().toString();  
 		    
 		    } catch (RestClientException e) {
@@ -65,7 +69,7 @@ public class DummyServiceImpl implements DummyService{
 			CsvSchema csvSchema = csvSchemaBuilder.build().withHeader();
 			exportCsvFile(jsonTree, csvSchema);
 		} catch (JsonProcessingException e) {
-			LOGGER.error("context", e);
+			LOGGER.error("context createCsv", e);
 		} 
 		
 		
@@ -80,9 +84,17 @@ public class DummyServiceImpl implements DummyService{
 			  .with(csvSchema)
 			  .writeValue(new File("src/main/resources/file.csv"), jsonTree);
 		} catch (IOException e) {
-			LOGGER.error("context", e);
+			LOGGER.error("context exportCsvFile", e);
 		}
 	}
-
+    
+	private void putFileToSftp() {
+		SftpUtils sftUtils = new SftpUtils();
+		try {
+			sftUtils.putFile("src/main/resources/file.csv");
+		} catch (SftpException | JSchException e) {
+			LOGGER.error("context putFileToSftp", e);
+		} 
+	}
 
 }
