@@ -14,7 +14,7 @@ public class EmployeeAplication {
 	  }
 
 	public boolean someLibraryMethod() {
-		return false;
+		return true;
 	}
 	
 }

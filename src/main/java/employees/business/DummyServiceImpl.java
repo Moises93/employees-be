@@ -2,11 +2,17 @@ package employees.business;
 
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -32,7 +38,8 @@ public class DummyServiceImpl implements DummyService{
 		      .getLogger(DummyServiceImpl.class);
 	  
 	private final String endpoint;
-	
+	@Value("classpath:file.csv")
+	Resource resourceFile;
    public DummyServiceImpl(
 		   @Value("${employees.endpoint}") String endpoint) {
 		    this.endpoint = endpoint;
@@ -41,16 +48,17 @@ public class DummyServiceImpl implements DummyService{
 	
 	
 	@Override
-	public String employees() {
+	public String employees()   {
 		    RestTemplate restTemplate = new RestTemplate();
 		    ResponseEntity<DummyResponse> entityResponse = null;
+		    LOGGER.info("Consume service {}",endpoint);
 		    try {
 		      entityResponse = restTemplate.getForEntity(endpoint, DummyResponse.class);
 		      createCsv(entityResponse.getBody());
-		      putFileToSftp();
+		       putFileToSftp();
 		      return entityResponse.getBody().toString();  
 		    
-		    } catch (RestClientException e) {
+		    } catch (RestClientException | IOException e) {
 		    	return("Error when consume employees service");
 		    }
 		    
@@ -60,7 +68,7 @@ public class DummyServiceImpl implements DummyService{
 	public void createCsv(DummyResponse dummyResponse) {
 
 		String json = new Gson().toJson(dummyResponse.getData());
-		
+		LOGGER.info("Create Csv {}",json);
 		try {
 			JsonNode jsonTree = new ObjectMapper().readTree(json);
 			Builder csvSchemaBuilder = CsvSchema.builder();
@@ -75,23 +83,33 @@ public class DummyServiceImpl implements DummyService{
 		
 		
 	}
+	
+	 
 
 
 	private void exportCsvFile(JsonNode jsonTree, CsvSchema csvSchema) {
+		LOGGER.info("init exportCsvFile");
+		
 		CsvMapper csvMapper = new CsvMapper();
 		try {
+			//LOGGER.info("Path File {} ",resourceFile.getURI().getPath().toString() );
+			//LOGGER.info("Path FileAbsolute {} ",resourceFile.getFile().getAbsolutePath() );
+			
+			
 			csvMapper.writerFor(JsonNode.class)
 			  .with(csvSchema)
-			  .writeValue(new File("src/main/resources/file.csv"), jsonTree);
+			  .writeValue(new FileOutputStream(new File("BOOT-INF/classes!/files.csv")), jsonTree);
 		} catch (IOException e) {
 			LOGGER.error("context exportCsvFile", e);
 		}
 	}
-    
-	private void putFileToSftp() {
+
+
+
+	private void putFileToSftp() throws IOException {
 		SftpUtils sftUtils = new SftpUtils();
 		try {
-			sftUtils.putFile("src/main/resources/file.csv");
+			sftUtils.putFile(resourceFile.getFile().getAbsolutePath());
 		} catch (SftpException | JSchException e) {
 			LOGGER.error("context putFileToSftp", e);
 		} 
