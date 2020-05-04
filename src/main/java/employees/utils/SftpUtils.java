@@ -24,7 +24,7 @@ public class SftpUtils {
 	  private static final Logger LOGGER = LoggerFactory
 		      .getLogger(SftpUtils.class);
 	  
-	private ChannelSftp setupJsch() throws JSchException {
+	public ChannelSftp setupJsch() throws JSchException {
 		LOGGER.info("Init Connection SFTP");
 	    JSch jsch = new JSch();
 	    Properties config = new Properties(); 
@@ -44,8 +44,9 @@ public class SftpUtils {
 	    channelSftp.connect();
 	    String remoteDir = "home/file/";
 	    channelSftp.put(localFile, remoteDir + "file.csv");
-	  
+	    
 	    channelSftp.exit();
+		LOGGER.info("Finish Connection SFTP");
 	}
 
 	@Value("${sftp.host}")

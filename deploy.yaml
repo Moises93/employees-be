@@ -1,0 +1,43 @@
+# [Services]
+apiVersion: v1
+kind: Service
+metadata:
+  name: employees-be-svc
+spec:
+  ports:
+  - port: 8081
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: employees-be
+    tier: backend
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: employees-be-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: employees-be
+  template:
+    metadata:
+      labels:
+        app: employees-be
+        tier: backend
+    spec:
+      containers:
+      # [APP]
+      - name: employees-be
+        image: gcr.io/prueba-moises-gcp/employees-be:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8080
+        #[env-vars]
+        env:
+        - name: PORT_HOST
+          value: "22"
